@@ -20,7 +20,7 @@ export class UserController {
         }
     }
 
-    async one(request: Request, response: Response, next: NextFunction) {
+    static async one(request: Request, response: Response, next: NextFunction) {
         const id = parseInt(request.params.id)
 
 
@@ -34,7 +34,7 @@ export class UserController {
         return user
     }
 
-    async save(request: Request, response: Response, next: NextFunction) {
+    static async save(request: Request, response: Response, next: NextFunction) {
         const { firstName, lastName, age } = request.body;
 
         const user = Object.assign(new User(), {
@@ -46,7 +46,7 @@ export class UserController {
         return UserController.repo.save(user)
     }
 
-    async remove(request: Request, response: Response, next: NextFunction) {
+    static async remove(request: Request, response: Response, next: NextFunction) {
         const id = parseInt(request.params.id)
 
         let userToRemove = await UserController.repo.findOneBy({ id })
