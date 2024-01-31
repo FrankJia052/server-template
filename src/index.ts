@@ -1,52 +1,35 @@
 import * as express from "express"
-import * as bodyParser from "body-parser"
-import { Request, Response } from "express"
+// import { Request, Response } from "express"
 import { AppDataSource } from "./data-source"
-import { Routes } from "./routes"
+// import { Routes } from "./routes"
 import { User } from "./entity/User"
+import { CLog } from "./AppHelper"
+import * as cors from "cors"
+import routes from './routes'
+
+
+const SERVER_PORT = process.env.HTTP_PORT
+
+// SEEDCODE CHECK
+if(process.env.SEEDCODE !== 'jurong2024') {
+    CLog.bad("Start Server need correct env SEEDCODE!")
+    process.exit(1)
+}
 
 AppDataSource.initialize().then(async () => {
-
+    CLog.ok("Data Source has been initialized!")
+    
     // create express app
     const app = express()
-    app.use(bodyParser.json())
+    app.disable('x-powered-by')
 
-    // register express routes from defined application routes
-    Routes.forEach(route => {
-        (app as any)[route.method](route.route, (req: Request, res: Response, next: Function) => {
-            const result = (new (route.controller as any))[route.action](req, res, next)
-            if (result instanceof Promise) {
-                result.then(result => result !== null && result !== undefined ? res.send(result) : undefined)
+    app.use(express.json())
 
-            } else if (result !== null && result !== undefined) {
-                res.json(result)
-            }
-        })
-    })
+    app.use('*', cors())
 
-    // setup express app here
-    // ...
+    app.use("/", routes)
+    app.listen(SERVER_PORT)
 
-    // start express server
-    app.listen(3000)
+    CLog.ok(`NODE_ENV is : ${process.env.NODE_ENV}.\n Express server has started on port ${SERVER_PORT}.`)
 
-    // insert new users for test
-    await AppDataSource.manager.save(
-        AppDataSource.manager.create(User, {
-            firstName: "Timber",
-            lastName: "Saw",
-            age: 27
-        })
-    )
-
-    await AppDataSource.manager.save(
-        AppDataSource.manager.create(User, {
-            firstName: "Phantom",
-            lastName: "Assassin",
-            age: 24
-        })
-    )
-
-    console.log("Express server has started on port 3000. Open http://localhost:3000/users to see results")
-
-}).catch(error => console.log(error))
+}).catch(error => CLog.bad("Error Server Initializing...", error))
