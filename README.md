@@ -1,3 +1,24 @@
+# Introduction
+
+This is our basic express server
+
+It integrate typeorm, basic error handler, response helper and separate the development / production environment.
+
+
+
+# Configuration:
+
+Based on the `.env.example`, create your own `.env` with correct database information.
+
+Change `.env` content:
+
+- DEVELOP DATABASE
+- HTTP_PORT to the port of project announcement announced
+
+
+
+
+
 # Run Server
 
 Database: PostgreSQL
@@ -57,7 +78,13 @@ Database: PostgreSQL
 $ npm run pro:start
 ~~~
 
+before run it, you need to setup the `.env` for the PRODUCTION DATABASE. Please ask Jurong for details.
 
+
+
+# Other
+
+You can add any library , add any technology in your service, make proper documentation that others can understand easily. 
 
 
 
