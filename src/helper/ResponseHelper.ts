@@ -4,11 +4,12 @@ import { isProduction } from "../AppHelper";
 
 export enum HttpSuccessStatus {
     Success = 200,
-    Created = 201
+    Created = 201,
+    Deleted = 204,
 }
 
 export enum HttpErrorStatus {
-    BadRequest= 400,
+    BadRequest = 400,
     Unauthorized = 401,
     NotFound = 404,
     Forbidden = 403,
@@ -22,7 +23,7 @@ interface IGoodResData {
     status: true,
     statusCode: HttpSuccessStatus,
     message: string,
-    resData?: any,   
+    resData?: any,
 }
 
 interface IBadResData {
@@ -34,7 +35,7 @@ interface IBadResData {
 }
 
 
-const SuccessConfig:{[key:string]:IGoodResData} = {
+const SuccessConfig: { [key: string]: IGoodResData } = {
     [HttpSuccessStatus.Success]: {
         status: true,
         statusCode: 200,
@@ -44,53 +45,58 @@ const SuccessConfig:{[key:string]:IGoodResData} = {
         status: true,
         statusCode: 201,
         message: "Resources has been created"
-    }
+    },
+    [HttpSuccessStatus.Deleted]: {
+        status: true,
+        statusCode: 200,
+        message: "Resources has been removed"
+    },
 }
 
-const ErrorConfig: {[key:string]:IBadResData} = {
+const ErrorConfig: { [key: string]: IBadResData } = {
     [HttpErrorStatus.BadRequest]: {
-        status: false,        
+        status: false,
         statusCode: 400,
         message: "Bad request: wrong format",
         error: "Bad Request"
     },
-    [HttpErrorStatus.Unauthorized]:{
+    [HttpErrorStatus.Unauthorized]: {
         status: false,
         statusCode: 401,
         message: "Invalid authorization: user need auth",
         error: "Unauthorized"
     },
-    [HttpErrorStatus.Forbidden]:{
+    [HttpErrorStatus.Forbidden]: {
         status: false,
         statusCode: 403,
         message: "Forbidden: role need auth",
         error: "Forbidden"
     },
-    [HttpErrorStatus.NotFound]:{
+    [HttpErrorStatus.NotFound]: {
         status: false,
         statusCode: 404,
         message: "The requested resource is not available",
         error: "Not Found"
     },
-    [HttpErrorStatus.NotAcceptable]:{
+    [HttpErrorStatus.NotAcceptable]: {
         status: false,
         statusCode: 406,
         message: "Not acceptable data format for DataBase require",
         error: "Not Acceptable",
     },
-    [HttpErrorStatus.Conflict]:{
+    [HttpErrorStatus.Conflict]: {
         status: false,
         statusCode: 409,
         message: "data already exists!",
         error: "Conflict"
     },
-    [HttpErrorStatus.RequestOverSize]:{
+    [HttpErrorStatus.RequestOverSize]: {
         status: false,
         statusCode: 413,
         message: "Payload too large, do not over xxx MB",
         error: "Payload Too Large"
     },
-    [HttpErrorStatus.InternalServerError]:{
+    [HttpErrorStatus.InternalServerError]: {
         status: false,
         statusCode: 500,
         message: "Internal Server Error",
@@ -98,61 +104,63 @@ const ErrorConfig: {[key:string]:IBadResData} = {
     }
 }
 
-class ResHelper {  
+class ResHelper {
     statusCode: HttpSuccessStatus | HttpErrorStatus;
     message: string | ValidationError[] | Error;
     resData?: any;
-    error?: string;    
+    error?: string;
 
     constructor() {
         const success = SuccessConfig[200]
         this.statusCode = success.statusCode
         this.message = success.message
-    }   
+    }
 
-    setData(data:any) {
+    setData(data: any) {
         this.resData = data
     }
-    appendData(data:any) {
+    appendData(data: any) {
         this.resData = Object.assign({}, this.resData, data)
     }
-    sendSuccessRes (res:Response, statusCode?: HttpSuccessStatus, message?: string) {
-        if(statusCode) {
+    sendSuccessRes(res: Response, statusCode?: HttpSuccessStatus, message?: string) {
+        if (statusCode) {
             const success = SuccessConfig[statusCode]
             this.statusCode = success.statusCode
             this.message = message ? message : success?.message
-        } else if (message){
+        } else if (message) {
             this.message = message
         }
 
-        const responseData:IGoodResData = {
+        const responseData: IGoodResData = {
             status: true,
             statusCode: this.statusCode as HttpSuccessStatus,
-            message: this.message as string            
+            message: this.message as string
         }
-        if(this.resData) {
+        if (this.resData) {
             responseData.resData = this.resData
         }
         return res.status(responseData.statusCode).send(responseData)
     }
 
-    sendErrorRes (res: Response, err: Error, statusCode?: HttpErrorStatus, message?: string):Response {
+    sendErrorRes(res: Response, err: Error, statusCode?: HttpErrorStatus, message?: string): Response {
         let errorRes = ErrorConfig[HttpErrorStatus.InternalServerError]
-        if(statusCode) {
+        if (statusCode) {
             errorRes = ErrorConfig[statusCode]
         }
         this.statusCode = errorRes.statusCode
         this.message = message ? message : errorRes.message
         this.error = errorRes.error
 
-        const responseData:IBadResData = {
+        // handle err to conver to our response Data
+
+        const responseData: IBadResData = {
             status: false,
             statusCode: this.statusCode,
-            message: this.message,
+            message: errorHandler(err, this.message as string),
             error: this.error
         }
 
-        if(!isProduction()) {
+        if (!isProduction()) {
             responseData.resData = err
         }
         return res.status(responseData.statusCode).send(responseData)
@@ -160,3 +168,10 @@ class ResHelper {
 }
 
 export default ResHelper
+
+function errorHandler(err: Error, message: string): string {
+    if (typeof err === "string") {
+        return err
+    }
+    return message
+}
