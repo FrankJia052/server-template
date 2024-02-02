@@ -194,7 +194,7 @@ try {
   - required parameter
   - imported from express
 - err:
-  - required parameter
+  - required parameter，can be undefined type
   - passing from the parameter from catch
   - it **only show in developing mode**, hide in production mode
   - use the err information, to decide which **statusCode** to use!
